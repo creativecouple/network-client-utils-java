@@ -15,21 +15,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UriListTest {
 
     @Test
-    void fetchFileNotFound() {
-        assertThatThrownBy(() -> UriList.fetch(URI.create("file:///path/does/not/exist")))
+    void getFromFileNotFound() {
+        assertThatThrownBy(() -> UriList.getFrom(URI.create("file:///path/does/not/exist")))
                 .isInstanceOf(FileNotFoundException.class);
     }
 
     @Test
-    void fetchMalformedUrl() {
-        assertThatThrownBy(() -> UriList.fetch(URI.create("unkown://protocol/does/not/exist")))
+    void getFromMalformedUrl() {
+        assertThatThrownBy(() -> UriList.getFrom(URI.create("unkown://protocol/does/not/exist")))
                 .isInstanceOf(MalformedURLException.class);
     }
 
     @Test
     void emptyBody() throws Exception {
         Path file = Files.createTempFile("uri", ".list");
-        assertThat(UriList.fetch(file.toUri()))
+        assertThat(UriList.getFrom(file.toUri()))
                 .isEmpty();
     }
 
@@ -37,7 +37,7 @@ class UriListTest {
     void commentsOnly() throws Exception {
         Path file = Files.createTempFile("uri", ".list");
         Files.write(file, asList("# some comment", "", "#http://example.com/"));
-        assertThat(UriList.fetch(file.toUri()))
+        assertThat(UriList.getFrom(file.toUri()))
                 .isEmpty();
     }
 
@@ -45,7 +45,7 @@ class UriListTest {
     void relativeAbsoluteFileUri() throws Exception {
         Path file = Files.createTempFile("uri", ".list");
         Files.write(file, asList("foobar", "../foo/bar", "./", "http://example.com", "//some/path", "?some=query#with-fragment"));
-        assertThat(UriList.fetch(file.toUri()))
+        assertThat(UriList.getFrom(file.toUri()))
                 .containsExactly(
                         URI.create("file:/tmp/foobar"),
                         URI.create("file:/foo/bar"),
@@ -57,7 +57,7 @@ class UriListTest {
     }
 
     @Test
-    void relativeAbsoluteHttpUri() throws Exception {
+    void relativeAbsoluteHttpUri() {
         try (MockEndpoint endpoint = new MockEndpoint()) {
             endpoint.fail(200, "foobar\n" +
                                "../foo/bar\n" +
@@ -66,7 +66,7 @@ class UriListTest {
                                "//some/path\n" +
                                "?some=query#with-fragment\n");
             String domain = "http://" + endpoint.uri.getHost() + ":" + endpoint.uri.getPort();
-            assertThat(UriList.fetch(endpoint.uri))
+            assertThat(UriList.getFrom(endpoint.uri))
                     .containsExactly(
                             URI.create(endpoint.uri + "foobar"),
                             URI.create(domain + "/foo/bar"),
@@ -74,6 +74,30 @@ class UriListTest {
                             URI.create("http://example.com"),
                             URI.create("http://some/path"),
                             URI.create(endpoint.uri + "?some=query#with-fragment")
+                    );
+        }
+    }
+
+    @Test
+    void handle301Redirect() {
+        try (MockEndpoint endpoint1 = new MockEndpoint(); MockEndpoint endpoint2 = new MockEndpoint()) {
+            endpoint1.headers.put("Location", endpoint2.uri.toASCIIString());
+            endpoint1.fail(301, "redirected");
+            endpoint2.fail(200, "foobar\n" +
+                                "../foo/bar\n" +
+                                "./\n" +
+                                "http://example.com\n" +
+                                "//some/path\n" +
+                                "?some=query#with-fragment\n");
+            String domain = "http://" + endpoint2.uri.getHost() + ":" + endpoint2.uri.getPort();
+            assertThat(UriList.getFrom(endpoint1.uri))
+                    .containsExactly(
+                            URI.create(endpoint2.uri + "foobar"),
+                            URI.create(domain + "/foo/bar"),
+                            endpoint2.uri,
+                            URI.create("http://example.com"),
+                            URI.create("http://some/path"),
+                            URI.create(endpoint2.uri + "?some=query#with-fragment")
                     );
         }
     }
