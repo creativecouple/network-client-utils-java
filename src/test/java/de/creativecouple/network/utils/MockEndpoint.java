@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,8 @@ public class MockEndpoint implements Closeable, AutoCloseable {
 
     private final StringBuilder buffer = new StringBuilder();
     public final Map<String, String> headers = new HashMap<>();
+    private int failStatus = 0;
+    private String failMessage = null;
 
     public MockEndpoint() {
         server.createContext(path, this::handleHttpRequest);
@@ -50,6 +53,14 @@ public class MockEndpoint implements Closeable, AutoCloseable {
     private void handleHttpRequest(HttpExchange exchange) throws IOException {
         exchanges.add(exchange);
         headers.forEach(exchange.getResponseHeaders()::add);
+        if (failStatus > 0) {
+            byte[] content = failMessage.getBytes(UTF_8);
+            exchange.sendResponseHeaders(failStatus, content.length);
+            OutputStream body = exchange.getResponseBody();
+            body.write(content);
+            body.close();
+            return;
+        }
         exchange.sendResponseHeaders(200, 0);
         try (OutputStream output = exchange.getResponseBody()) {
             while (!Thread.interrupted()) {
@@ -75,5 +86,10 @@ public class MockEndpoint implements Closeable, AutoCloseable {
             buffer.append(line).append("\n");
             buffer.notifyAll();
         }
+    }
+
+    public void fail(int statusCode, String message) {
+        failStatus = statusCode;
+        failMessage = message;
     }
 }
