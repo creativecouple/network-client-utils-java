@@ -1,4 +1,4 @@
-package de.creativecouple.network.utils;
+package net.creativecouple.utils.network.clients;
 
 import com.sun.net.httpserver.HttpExchange;
 import lombok.SneakyThrows;
@@ -14,10 +14,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static de.creativecouple.network.utils.EventSource.Status.CLOSED;
-import static de.creativecouple.network.utils.EventSource.Status.CONNECTED;
-import static de.creativecouple.network.utils.EventSource.Status.CONNECTING;
-import static de.creativecouple.network.utils.EventSource.Status.DISCONNECTED;
+import static net.creativecouple.utils.network.clients.EventSource.Status.CLOSED;
+import static net.creativecouple.utils.network.clients.EventSource.Status.CONNECTED;
+import static net.creativecouple.utils.network.clients.EventSource.Status.CONNECTING;
+import static net.creativecouple.utils.network.clients.EventSource.Status.DISCONNECTED;
 import static java.nio.file.Files.createTempFile;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;

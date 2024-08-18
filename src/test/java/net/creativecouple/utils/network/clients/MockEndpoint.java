@@ -1,4 +1,4 @@
-package de.creativecouple.network.utils;
+package net.creativecouple.utils.network.clients;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;

@@ -1,4 +1,4 @@
-package de.creativecouple.network.utils;
+package net.creativecouple.utils.network.clients;
 
 import org.junit.jupiter.api.Test;
 
