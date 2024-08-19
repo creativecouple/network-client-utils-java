@@ -11,9 +11,9 @@ such as `text/uri-list` (URI lists) and `text/event-stream` (Server-Sent Events)
 
 ## Features
 
-- **UriList**: Seamlessly handle lists of URIs with the [`UriList`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/de/creativecouple/utils/network/clients/UriList.html) class, 
+- **UriList**: Seamlessly handle lists of URIs with the [`UriList`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/net/creativecouple/utils/network/clients/UriList.html) class, 
 that supports lazily streaming from `text/uri-list` resources.
-- **EventSource**: Easily implement Server-Sent Events (SSE) using an [`EventSource`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/de/creativecouple/utils/network/clients/EventSource.html) instance in your Java applications,
+- **EventSource**: Easily implement Server-Sent Events (SSE) using an [`EventSource`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/net/creativecouple/utils/network/clients/EventSource.html) instance in your Java applications,
 inspired by the JavaScript `EventSource` API for handling `text/event-stream` endpoints.
 
 ## Installation (latest version "0.2.1")
@@ -55,7 +55,7 @@ libraryDependencies += "net.creativecouple.utils" % "network-client-utils" % "0.
 
 ### UriList
 
-The [`UriList`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/de/creativecouple/utils/network/clients/UriList.html) class provides an easy way to parse lists of URIs,
+The [`UriList`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/net/creativecouple/utils/network/clients/UriList.html) class provides an easy way to parse lists of URIs,
 which can be fetched as `List<URI>` or `Stream<URI>` from any local or remote `text/uri-list` resource.
 It automatically resolves relative (e.g. *./file.txt*), domain-relative (e.g. */some/path*), or protocol-relative (e.g. *//example.com/path*)
 URIs based on the actual location (i.e. after any potential redirect) of the remote resource.
@@ -93,7 +93,7 @@ public class UriListExample {
 
 ### EventSource
 
-The [`EventSource`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/de/creativecouple/utils/network/clients/EventSource.html) class allows your Java applications to receive
+The [`EventSource`](https://javadoc.io/doc/net.creativecouple.utils/network-client-utils/latest/net/creativecouple/utils/network/clients/EventSource.html) class allows your Java applications to receive
 real-time updates from servers via Server-Sent Events (SSE).
 This class closely mimics the JavaScript `EventSource` API,
 providing a familiar interface for Java developers.
