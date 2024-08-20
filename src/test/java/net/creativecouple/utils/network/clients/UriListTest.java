@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -53,11 +54,24 @@ class UriListTest {
     void relativeAbsoluteHttpUri() {
         try (MockEndpoint endpoint = new MockEndpoint()) {
             endpoint.fail(200, "foobar\n" + "../foo/bar\n" + "./\n" + "http://example.com\n" + "//some/path\n"
-                    + "?some=query#with-fragment\n");
+                               + "?some=query#with-fragment\n");
             String domain = "http://" + endpoint.uri.getHost() + ":" + endpoint.uri.getPort();
             assertThat(UriList.getFrom(endpoint.uri)).containsExactly(URI.create(endpoint.uri + "foobar"),
                     URI.create(domain + "/foo/bar"), endpoint.uri, URI.create("http://example.com"),
                     URI.create("http://some/path"), URI.create(endpoint.uri + "?some=query#with-fragment"));
+        }
+    }
+
+    @Test
+    void basicAuthentication() {
+        try (MockEndpoint endpoint = new MockEndpoint()) {
+            URI uri = endpoint.uri;
+            URI uriWithUser = URI.create(uri.getScheme() + "://fritz:S3cr3t@" + uri.getHost() + ":" + uri.getPort() + uri.getPath());
+            endpoint.fail(200, "foobar\n");
+            assertThat(UriList.getFrom(uriWithUser)).containsExactly(URI.create(uriWithUser + "foobar"));
+            assertThat(endpoint.requests).hasSize(1);
+            assertThat(endpoint.requests.get(0).getRequestHeaders())
+                    .containsEntry("Authorization", singletonList("Basic ZnJpdHo6UzNjcjN0"));
         }
     }
 
@@ -67,7 +81,7 @@ class UriListTest {
             endpoint1.headers.put("Location", endpoint2.uri.toASCIIString());
             endpoint1.fail(301, "redirected");
             endpoint2.fail(200, "foobar\n" + "../foo/bar\n" + "./\n" + "http://example.com\n" + "//some/path\n"
-                    + "?some=query#with-fragment\n");
+                                + "?some=query#with-fragment\n");
             String domain = "http://" + endpoint2.uri.getHost() + ":" + endpoint2.uri.getPort();
             assertThat(UriList.getFrom(endpoint1.uri)).containsExactly(URI.create(endpoint2.uri + "foobar"),
                     URI.create(domain + "/foo/bar"), endpoint2.uri, URI.create("http://example.com"),

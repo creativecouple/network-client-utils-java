@@ -57,6 +57,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * <p>
  * This class implements {@link Iterable}, allowing it to be used in enhanced
  * for-loops or to be converted into a {@link Stream}.
+ * Basic authentication is supported via the URI's user-info part.
  *
  * @author Peter Liske (CreativeCouple)
  */
@@ -115,6 +116,7 @@ public final class UriList implements Iterable<URI> {
     public Iterator<URI> iterator() {
         URLConnection connection = uri.toURL().openConnection();
         connection.addRequestProperty("Accept", "text/uri-list, text/plain;q=0.9, text/*;q=0.5");
+        Authentication.addUserInfoHeader(connection);
         BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), UTF_8));
         return new Iterator<URI>() {
 

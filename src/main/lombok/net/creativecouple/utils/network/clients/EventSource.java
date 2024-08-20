@@ -65,6 +65,8 @@ import static java.util.Optional.ofNullable;
  *   <li><a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#server-sent-events">HTML Standard: Server-Sent Events</a></li>
  * </ul>
  *
+ * Basic authentication is supported via the URI's user-info part.
+ *
  * @author Peter Liske (CreativeCouple)
  */
 public class EventSource implements AutoCloseable, Closeable {
@@ -328,6 +330,7 @@ public class EventSource implements AutoCloseable, Closeable {
      */
     private URLConnection openUrlConnection() throws IOException {
         final URLConnection connection = uri.toURL().openConnection();
+        Authentication.addUserInfoHeader(connection);
         getRequestHeaders().forEach(connection::setRequestProperty);
         int timeout = readTimeout;
         connection.setConnectTimeout(timeout);

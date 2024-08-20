@@ -14,13 +14,13 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.nio.file.Files.createTempFile;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static net.creativecouple.utils.network.clients.EventSource.Status.CLOSED;
 import static net.creativecouple.utils.network.clients.EventSource.Status.CONNECTED;
 import static net.creativecouple.utils.network.clients.EventSource.Status.CONNECTING;
 import static net.creativecouple.utils.network.clients.EventSource.Status.DISCONNECTED;
-import static java.nio.file.Files.createTempFile;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings({ "unchecked", "DataFlowIssue" })
+@SuppressWarnings({"unchecked", "DataFlowIssue"})
 class EventSourceTest {
 
     @SneakyThrows
@@ -71,7 +71,9 @@ class EventSourceTest {
     @Test
     void addErrorListener() {
         Consumer<Exception> errorListener = mock(Consumer.class);
-        try (EventSource eventSource = new EventSource("https://example.com/events").onError(errorListener)) {
+        try (EventSource eventSource = new EventSource("https://example.com/events")
+                .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -82,7 +84,9 @@ class EventSourceTest {
     void callErrorListenerWrongUrl() {
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (EventSource eventSource = new EventSource("protocol-does-not-exist://example.com/events")
-                .onError(errorListener).onMessage(mock(Consumer.class))) {
+                .onError(errorListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -92,8 +96,10 @@ class EventSourceTest {
     @Test
     void callErrorListenerNotFound() {
         Consumer<Exception> errorListener = mock(Consumer.class);
-        try (EventSource eventSource = new EventSource("file:///file/does/not/exist").onError(errorListener)
-                .onMessage(mock(Consumer.class))) {
+        try (EventSource eventSource = new EventSource("file:///file/does/not/exist")
+                .onError(errorListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -104,7 +110,10 @@ class EventSourceTest {
     void removeErrorListener() {
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (EventSource eventSource = new EventSource("protocol-does-not-exist://example.com/events")
-                .onError(errorListener).onError(null).onMessage(mock(Consumer.class))) {
+                .onError(errorListener)
+                .onError(null)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -116,7 +125,10 @@ class EventSourceTest {
         Consumer<URI> openListener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         URI uri = createTempFile("events", ".txt").toUri();
-        try (EventSource eventSource = new EventSource(uri).onError(errorListener).onOpen(openListener)) {
+        try (EventSource eventSource = new EventSource(uri)
+                .onError(errorListener)
+                .onOpen(openListener)
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -129,8 +141,11 @@ class EventSourceTest {
         Consumer<URI> openListener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         URI uri = createTempFile("events", ".txt").toUri();
-        try (EventSource eventSource = new EventSource(uri).onOpen(openListener).onError(errorListener)
-                .onMessage(mock(Consumer.class))) {
+        try (EventSource eventSource = new EventSource(uri)
+                .onOpen(openListener)
+                .onError(errorListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -143,8 +158,12 @@ class EventSourceTest {
         Consumer<URI> openListener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         URI uri = createTempFile("events", ".txt").toUri();
-        try (EventSource eventSource = new EventSource(uri).onOpen(openListener).onError(errorListener).onOpen(null)
-                .onMessage(mock(Consumer.class))) {
+        try (EventSource eventSource = new EventSource(uri)
+                .onOpen(openListener)
+                .onError(errorListener)
+                .onOpen(null)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -170,7 +189,10 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener).onMessage(listener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+                     .onMessage(listener)
+        ) {
             assertThat(eventSource).isNotNull();
             endpoint.println(":ping");
             pause();
@@ -184,7 +206,10 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener).onMessage(listener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+                     .onMessage(listener)
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
             eventSource.onMessage(null);
@@ -200,7 +225,9 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             assertThat(eventSource.status()).isEqualTo(DISCONNECTED);
             eventSource.onMessage(listener);
@@ -236,8 +263,11 @@ class EventSourceTest {
         Consumer<Exception> errorListener = mock(Consumer.class);
         Consumer<EventSource.Message> listener = mock(Consumer.class);
 
-        try (EventSource eventSource = new EventSource(uriFactory).onOpen(openListener).onError(errorListener)
-                .onMessage(listener)) {
+        try (EventSource eventSource = new EventSource(uriFactory)
+                .onOpen(openListener)
+                .onError(errorListener)
+                .onMessage(listener)
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
 
@@ -263,7 +293,9 @@ class EventSourceTest {
     void addNamedMessageListener() {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
-        try (EventSource eventSource = new EventSource("https://example.com/events").onError(errorListener)) {
+        try (EventSource eventSource = new EventSource("https://example.com/events")
+                .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             eventSource.addEventListener("foobar", listener);
             pause();
@@ -285,7 +317,9 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             eventSource.addEventListener("foobar", listener);
             endpoint.println("event:foobar");
@@ -301,7 +335,9 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             eventSource.addEventListener("foobar", listener);
             endpoint.println("\uFEFFevent:foobar");
@@ -317,7 +353,9 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             eventSource.addEventListener("message", listener);
             endpoint.println("");
@@ -334,7 +372,9 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             eventSource.addEventListener("foobar", listener);
             pause();
@@ -352,7 +392,9 @@ class EventSourceTest {
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri).onError(errorListener)) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+        ) {
             assertThat(eventSource).isNotNull();
             eventSource.addEventListener("foobar", listener);
             pause();
@@ -378,8 +420,11 @@ class EventSourceTest {
         Consumer<Map<String, String>> beforeOpenListener = mock(Consumer.class);
         Consumer<Exception> errorListener = mock(Consumer.class);
         URI uri = createTempFile("events", ".txt").toUri();
-        try (EventSource eventSource = new EventSource(uri).onBeforeOpen(beforeOpenListener).onError(errorListener)
-                .onMessage(mock(Consumer.class))) {
+        try (EventSource eventSource = new EventSource(uri)
+                .onBeforeOpen(beforeOpenListener)
+                .onError(errorListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
         }
@@ -396,15 +441,17 @@ class EventSourceTest {
     void addRequestHeader() {
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint.uri)
-                        .onBeforeOpen(headers -> headers.put("Authentication", "Bearer s3cr3t")).onError(errorListener)
-                        .onMessage(mock(Consumer.class))) {
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onBeforeOpen(headers -> headers.put("Authorization", "Bearer s3cr3t"))
+                     .onError(errorListener)
+                     .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             pause();
             assertThat(endpoint.requests).hasSize(1);
             HttpExchange exchange = endpoint.requests.get(0);
             assertThat(exchange.getRequestHeaders()).hasSizeGreaterThanOrEqualTo(4)
-                    .containsEntry("Authentication", singletonList("Bearer s3cr3t"))
+                    .containsEntry("Authorization", singletonList("Bearer s3cr3t"))
                     .containsEntry("Accept", singletonList("text/event-stream, text/plain;q=0.9, text/*;q=0.5"))
                     .containsEntry("Accept-Encoding", singletonList("identity"))
                     .containsEntry("Cache-Control", singletonList("no-store"));
@@ -416,7 +463,10 @@ class EventSourceTest {
     void checkLastEventIdHeader() throws Exception {
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint(); EventSource eventSource = new EventSource(endpoint.uri)
-                .readTimeout(500).onError(errorListener).onMessage(mock(Consumer.class))) {
+                .readTimeout(500)
+                .onError(errorListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             endpoint.println("retry:0");
             endpoint.println("id: some-id-1234");
@@ -433,10 +483,36 @@ class EventSourceTest {
     }
 
     @Test
+    void checkAuthenticationHeader() {
+        Consumer<Exception> errorListener = mock(Consumer.class);
+        try (MockEndpoint endpoint = new MockEndpoint()) {
+            URI uri = endpoint.uri;
+            URI uriWithUser = URI.create(uri.getScheme() + "://fritz:S3cr3t@" + uri.getHost() + ":" + uri.getPort() + uri.getPath());
+            try (EventSource eventSource = new EventSource(uriWithUser)
+                    .onError(errorListener)
+                    .onMessage(mock(Consumer.class))
+            ) {
+                assertThat(eventSource).isNotNull();
+                pause();
+                assertThat(endpoint.requests).hasSize(1);
+                HttpExchange exchange = endpoint.requests.get(0);
+                assertThat(exchange.getRequestHeaders()).hasSizeGreaterThanOrEqualTo(4)
+                        .containsEntry("Authorization", singletonList("Basic ZnJpdHo6UzNjcjN0"))
+                        .containsEntry("Accept", singletonList("text/event-stream, text/plain;q=0.9, text/*;q=0.5"))
+                        .containsEntry("Accept-Encoding", singletonList("identity"))
+                        .containsEntry("Cache-Control", singletonList("no-store"));
+            }
+        }
+        verifyNoInteractions(errorListener);
+    }
+
+    @Test
     void addRetryHeader() {
         Consumer<Exception> errorListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint(); EventSource eventSource = new EventSource(endpoint.uri)
-                .onError(errorListener).onMessage(mock(Consumer.class))) {
+                .onError(errorListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             endpoint.headers.put("Retry-After", "42");
             pause();
             assertThat(eventSource.retryMillis()).isEqualTo(42);
@@ -449,7 +525,11 @@ class EventSourceTest {
         Consumer<Exception> errorListener = mock(Consumer.class);
         Consumer<URI> openListener = mock(Consumer.class);
         try (MockEndpoint endpoint = new MockEndpoint(); EventSource eventSource = new EventSource(endpoint.uri)
-                .readTimeout(500).onError(errorListener).onOpen(openListener).onMessage(mock(Consumer.class))) {
+                .readTimeout(500)
+                .onError(errorListener)
+                .onOpen(openListener)
+                .onMessage(mock(Consumer.class))
+        ) {
             assertThat(eventSource).isNotNull();
             endpoint.println("retry:0");
             Thread.sleep(600);
@@ -466,8 +546,11 @@ class EventSourceTest {
         Consumer<URI> openListener = mock(Consumer.class);
         Consumer<EventSource.Message> listener = mock(Consumer.class);
         try (MockEndpoint endpoint1 = new MockEndpoint(); MockEndpoint endpoint2 = new MockEndpoint();
-                EventSource eventSource = new EventSource(endpoint1.uri).onError(errorListener).onOpen(openListener)
-                        .onMessage(listener)) {
+             EventSource eventSource = new EventSource(endpoint1.uri)
+                     .onError(errorListener)
+                     .onOpen(openListener)
+                     .onMessage(listener)
+        ) {
             assertThat(eventSource).isNotNull();
 
             endpoint1.headers.put("Location", endpoint2.uri.toASCIIString());
