@@ -22,13 +22,15 @@
  */
 package net.creativecouple.utils.network.clients;
 
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.Value;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -64,12 +67,12 @@ import static java.util.Optional.ofNullable;
  *   <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events">Mozilla Developer Network: Server-Sent Events</a></li>
  *   <li><a href="https://html.spec.whatwg.org/multipage/server-sent-events.html#server-sent-events">HTML Standard: Server-Sent Events</a></li>
  * </ul>
- *
+ * <p>
  * Basic authentication is supported via the URI's user-info part.
  *
  * @author Peter Liske (CreativeCouple)
  */
-public class EventSource implements AutoCloseable, Closeable {
+public class EventSource implements AutoCloseable {
 
     /**
      * Creates a new EventSource instance with the specified URI.
@@ -113,7 +116,7 @@ public class EventSource implements AutoCloseable, Closeable {
     private final Thread thread;
     private final Object internalLock = new Object();
     private boolean wantsToConnect = false;
-    private final Map<String, List<Consumer<Message>>> listeners = new ConcurrentHashMap<>();
+    private final Map<String, List<Listener<Message>>> listeners = new ConcurrentHashMap<>();
 
     /**
      * -- GETTER --
@@ -149,34 +152,34 @@ public class EventSource implements AutoCloseable, Closeable {
      * -- SETTER --
      * Sets a listener that is invoked when an error occurs while processing events.
      *
-     * @param onError A {@link Consumer} that is invoked when an error occurs while processing events.
+     * @param onError A {@link Listener} that is invoked when an error occurs while processing events.
      * @return The current EventSource instance.
      */
     @Setter
-    private Consumer<Exception> onError;
+    private Listener<Exception> onError;
 
     /**
      * -- SETTER --
      * Sets a listener that is invoked when the EventSource successfully opens a connection.
      *
-     * @param onOpen A {@link Consumer} that is invoked when the EventSource successfully opens a connection.
+     * @param onOpen A {@link Listener} that is invoked when the EventSource successfully opens a connection.
      * @return The current EventSource instance.
      */
     @Setter
-    private Consumer<URI> onOpen;
+    private Listener<URI> onOpen;
 
     /**
      * -- SETTER --
      * Sets a callback that is invoked before the EventSource opens a connection, allowing
      * modification of request headers.
      *
-     * @param onBeforeOpen A {@link Consumer} that is invoked before the EventSource opens a connection.
+     * @param onBeforeOpen A {@link Listener} that is invoked before the EventSource opens a connection.
      * @return The current EventSource instance.
      */
     @Setter
-    private Consumer<Map<String, String>> onBeforeOpen;
+    private Listener<Map<String, String>> onBeforeOpen;
 
-    private Consumer<Message> onMessage;
+    private Listener<Message> onMessage;
 
     /**
      * Sets a listener for any message events.
@@ -185,7 +188,7 @@ public class EventSource implements AutoCloseable, Closeable {
      * @param listener A {@link Consumer} that processes incoming messages.
      * @return The current EventSource instance.
      */
-    public EventSource onMessage(Consumer<Message> listener) {
+    public EventSource onMessage(Listener<Message> listener) {
         this.onMessage = listener;
         updateWantsToConnect();
         return this;
@@ -245,7 +248,7 @@ public class EventSource implements AutoCloseable, Closeable {
      * @param type     The event type to listen for.
      * @param listener A {@link Consumer} that processes incoming events of the specified event type.
      */
-    public void addEventListener(String type, @NonNull Consumer<Message> listener) {
+    public void addEventListener(String type, @NonNull Listener<Message> listener) {
         listeners.computeIfAbsent(type, k -> new CopyOnWriteArrayList<>()).add(listener);
         updateWantsToConnect();
     }
@@ -256,7 +259,7 @@ public class EventSource implements AutoCloseable, Closeable {
      * @param type     The event type.
      * @param listener The listener to remove.
      */
-    public void removeEventListener(String type, @NonNull Consumer<Message> listener) {
+    public void removeEventListener(String type, @NonNull Listener<Message> listener) {
         listeners.computeIfPresent(type, (k, l) -> {
             l.remove(listener);
             return l.isEmpty() ? null : l;
@@ -305,7 +308,7 @@ public class EventSource implements AutoCloseable, Closeable {
             try (InputStream inputStream = connection.getInputStream()) {
                 status = Status.CONNECTED;
                 uri = URI.create(connection.getURL().toString());
-                ofNullable(onOpen).ifPresent(l -> l.accept(uri));
+                callListener(onOpen, uri);
                 actualRetryMillis = connection.getHeaderFieldInt("Retry-After", actualRetryMillis);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, UTF_8));
                 for (String line; (line = reader.readLine()) != null; ) {
@@ -316,7 +319,7 @@ public class EventSource implements AutoCloseable, Closeable {
                 }
             }
         } catch (IOException e) {
-            ofNullable(onError).ifPresent(l -> l.accept(e));
+            callListener(onError, e);
         }
         Thread.sleep(retryMillis());
     }
@@ -350,7 +353,7 @@ public class EventSource implements AutoCloseable, Closeable {
         headers.put("Accept-Encoding", "identity");
         headers.put("Cache-Control", "no-store");
         ofNullable(lastEventID).ifPresent(id -> headers.put("Last-Event-ID", id));
-        ofNullable(onBeforeOpen).ifPresent(l -> l.accept(headers));
+        callListener(onBeforeOpen, headers);
         return headers;
     }
 
@@ -410,7 +413,7 @@ public class EventSource implements AutoCloseable, Closeable {
      * @param value The comment text.
      */
     private void dispatchComment(String value) {
-        ofNullable(onMessage).ifPresent(l -> l.accept(new Message(null, null, value)));
+        callListener(onMessage, new Message(null, null, value));
     }
 
     /**
@@ -419,21 +422,42 @@ public class EventSource implements AutoCloseable, Closeable {
      */
     private void dispatchEventAndReset() {
         String type = nextEventType.isEmpty() ? "message" : nextEventType;
-        Message event = new Message(lastEventID, type, nextEventData.toString());
-        ofNullable(onMessage).ifPresent(l -> l.accept(event));
-        listeners.getOrDefault(type, emptyList()).forEach(l -> l.accept(event));
+        Message message = new Message(lastEventID, type, nextEventData.toString());
+        callListener(onMessage, message);
+        listeners.getOrDefault(type, emptyList()).forEach(l -> callListener(l, message));
         nextEventType = "";
         nextEventData.setLength(0);
+    }
+
+    private <T> void callListener(Listener<T> listener, T data) {
+        ofNullable(listener).ifPresent(l -> l.accept(new EventContext(this, l), data));
     }
 
     /**
      * Represents a message received from the server via the EventSource.
      */
     @Value
+    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
     public static class Message {
         String lastEventId;
         String type;
         String data;
+    }
+
+    /**
+     * Represents then context in which an event message is handled.
+     */
+    @Value
+    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+    public static class EventContext {
+        @EqualsAndHashCode.Exclude
+        transient EventSource source;
+        @EqualsAndHashCode.Exclude
+        Listener<?> target;
+    }
+
+    @FunctionalInterface
+    public interface Listener<T> extends BiConsumer<EventContext, T> {
     }
 
     /**
