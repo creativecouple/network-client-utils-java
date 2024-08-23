@@ -259,7 +259,7 @@ public class EventSource implements AutoCloseable {
      * @param type     The event type.
      * @param listener The listener to remove.
      */
-    public void removeEventListener(String type, @NonNull Listener<Message> listener) {
+    public void removeEventListener(String type, @NonNull Listener<?> listener) {
         listeners.computeIfPresent(type, (k, l) -> {
             l.remove(listener);
             return l.isEmpty() ? null : l;
@@ -456,6 +456,16 @@ public class EventSource implements AutoCloseable {
         Listener<?> target;
     }
 
+    /**
+     * Functional listener interface for EventSource listening methods.
+     *
+     * @param <T> the data to listen for
+     * @see EventSource#onError(Listener)
+     * @see EventSource#onOpen(Listener)
+     * @see EventSource#onBeforeOpen(Listener)
+     * @see EventSource#onMessage(Listener)
+     * @see EventSource#addEventListener(String, Listener)
+     */
     @FunctionalInterface
     public interface Listener<T> extends BiConsumer<EventContext, T> {
     }
