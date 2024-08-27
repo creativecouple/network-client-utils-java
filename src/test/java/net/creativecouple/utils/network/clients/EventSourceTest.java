@@ -25,6 +25,7 @@ import static net.creativecouple.utils.network.clients.EventSource.Status.CONNEC
 import static net.creativecouple.utils.network.clients.EventSource.Status.DISCONNECTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -581,5 +582,42 @@ class EventSourceTest {
             verify(openListener).accept(new EventContext(eventSource, openListener), endpoint2.uri);
         }
         verifyNoInteractions(errorListener);
+    }
+
+    @Test
+    void catchIllegalArgumentException() {
+        Listener<Exception> errorListener = mock(Listener.class);
+        Listener<URI> openListener = mock(Listener.class);
+        Listener<Message> listener = mock(Listener.class);
+        try (EventSource eventSource = new EventSource(URI.create("not/an/absolute/url"))
+                     .onError(errorListener)
+                     .onOpen(openListener)
+                     .onMessage(listener)
+        ) {
+            assertThat(eventSource).isNotNull();
+            pause();
+            verify(errorListener).accept(eq(new EventContext(eventSource, errorListener)), any(IllegalArgumentException.class));
+        }
+        verifyNoMoreInteractions(errorListener, openListener, listener);
+    }
+
+    @Test
+    void closeEventSourceVia204NoContent() {
+        Listener<Exception> errorListener = mock(Listener.class);
+        Listener<URI> openListener = mock(Listener.class);
+        Listener<Message> listener = mock(Listener.class);
+        try (MockEndpoint endpoint = new MockEndpoint();
+             EventSource eventSource = new EventSource(endpoint.uri)
+                     .onError(errorListener)
+                     .onOpen(openListener)
+                     .onMessage(listener)
+        ) {
+            assertThat(eventSource).isNotNull();
+            endpoint.fail(204, "");
+            pause();
+            assertThat(eventSource.status()).isEqualTo(CLOSED);
+            verify(openListener).accept(new EventContext(eventSource, openListener), endpoint.uri);
+        }
+        verifyNoMoreInteractions(errorListener, openListener, listener);
     }
 }

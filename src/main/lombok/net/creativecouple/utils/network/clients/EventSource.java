@@ -34,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -318,7 +319,11 @@ public class EventSource implements AutoCloseable {
                     }
                 }
             }
-        } catch (IOException e) {
+            if (connection instanceof HttpURLConnection &&
+                ((HttpURLConnection) connection).getResponseCode() == HttpURLConnection.HTTP_NO_CONTENT) {
+                close();
+            }
+        } catch (Exception e) {
             callListener(onError, e);
         }
         Thread.sleep(retryMillis());
